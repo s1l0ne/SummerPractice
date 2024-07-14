@@ -7,7 +7,8 @@ from tkinter import messagebox as mb
 def change_level():
     new_lvl = sd.askinteger(title='Выбор уровня', prompt='Введите номер уровня (от 1 до 50)')
     if new_lvl < 1 or new_lvl > 50:
-        mb.showerror(title='Change level error', message='Введен неверный номер уровня (автоматически установлено на 1)')
+        mb.showerror(title='Change level error',
+                     message='Введен неверный номер уровня (автоматически установлено на 1)')
         new_lvl = 1
 
     prepare_and_start()
@@ -16,14 +17,14 @@ def change_level():
         next_level(0)
 
 
-def change_diff():
-    global diff
-    diff += 1
-    diff %= 2
-    if diff:
-        diff_button.configure(text='Понизить сложность ботов')
+def change_difficulty():
+    global difficulty
+    difficulty += 1
+    difficulty %= 2
+    if difficulty:
+        difficulty_button.configure(text='Понизить сложность ботов')
     else:
-        diff_button.configure(text='Повысить сложность ботов')
+        difficulty_button.configure(text='Повысить сложность ботов')
     prepare_and_start()
 
 
@@ -35,14 +36,6 @@ def get_new_pos(add=True):
             if add:
                 coords.append(pos)
             return pos
-
-
-def always_right(c):
-    return step, 0
-
-
-def random_move(c):
-    return random.choice([(step, 0), (-step, 0), (0, step), (0, -step)])
 
 
 def to_player(c):
@@ -68,7 +61,7 @@ def to_player(c):
     else:
         y = 0
 
-    if diff == 0 and x != 0 and y != 0:
+    if difficulty == 0 and x != 0 and y != 0:
         if random.randint(0, 1):
             x = 0
         else:
@@ -79,8 +72,9 @@ def to_player(c):
 
 def prepare_and_start():
     canvas.delete('all')
+    global player, obj_exit, fires, enemies, level, coords
+
     coords = []
-    global player, exit, fires, enemies, level
 
     level = 1
 
@@ -88,81 +82,45 @@ def prepare_and_start():
 
     exit_pos = get_new_pos()
 
-    if step == 15:
-        player = canvas.create_image(
-            player_pos,
-            image=player_pic,
+    player = canvas.create_image(
+        player_pos,
+        image=player_pic,
+        anchor='nw'
+    )
+
+    obj_exit = canvas.create_image(
+        exit_pos,
+        image=exit_pic,
+        anchor='nw'
+    )
+
+    fires = []
+    for i in range(N_FIRES):
+        fire_pos = get_new_pos()
+        fire = canvas.create_image(
+            (fire_pos[0], fire_pos[1]),
+            image=fire_pic,
+            anchor='nw'
+        )
+        fires.append(fire)
+
+    enemies = []
+    for i in range(N_ENEMIES):
+        enemy_pos = get_new_pos()
+
+        enemy = canvas.create_image(
+            enemy_pos,
+            image=enemy_pic,
             anchor='nw'
         )
 
-        exit = canvas.create_image(
-            exit_pos,
-            image=exit_pic,
-            anchor='nw'
-        )
-
-        fires = []
-        for i in range(N_FIRES):
-            fire_pos = get_new_pos()
-            fire = canvas.create_image(
-                (fire_pos[0], fire_pos[1]),
-                image=fire_pic,
-                anchor='nw'
-            )
-            fires.append(fire)
-
-        enemies = []
-        for i in range(N_ENEMIES):
-            enemy_pos = get_new_pos()
-
-            enemy = canvas.create_image(
-                enemy_pos,
-                image=enemy_pic,
-                anchor='nw'
-            )
-
-            enemies.append((enemy, random.choice([to_player])))
-    else:
-        player = canvas.create_oval(
-            (player_pos[0], player_pos[1]),
-            (player_pos[0] + step, player_pos[1] + step),
-            fill='yellow'
-        )
-
-        exit = canvas.create_oval(
-            (exit_pos[0], exit_pos[1]),
-            (exit_pos[0] + step, exit_pos[1] + step),
-            fill='brown'
-        )
-
-        fires = []
-        for i in range(N_FIRES):
-            fire_pos = get_new_pos()
-            fire = canvas.create_oval(
-                (fire_pos[0], fire_pos[1]),
-                (fire_pos[0] + step, fire_pos[1] + step),
-                fill='red'
-            )
-            fires.append(fire)
-
-        enemies = []
-        for i in range(N_ENEMIES):
-            enemy_pos = get_new_pos()
-
-            enemy = canvas.create_oval(
-                (enemy_pos[0], enemy_pos[1]),
-                (enemy_pos[0] + step, enemy_pos[1] + step),
-                fill='purple'
-            )
-
-            enemies.append((enemy, random.choice([always_right, random_move, to_player])))
+        enemies.append((enemy, random.choice([to_player])))
 
     label.configure(text='Найди выход (уровень 1)')
     master.bind('<KeyPress>', key_pressed)
 
 
 def next_level(event):
-
     for i in range(N_ENEMIES):
         coords[2 + N_FIRES + i] = get_new_pos(add=False)
         canvas.moveto(enemies[i][0], *coords[2 + N_FIRES + i])
@@ -171,7 +129,7 @@ def next_level(event):
     canvas.moveto(player, *coords[0])
 
     coords[1] = get_new_pos(add=False)
-    canvas.moveto(exit, *coords[1])
+    canvas.moveto(obj_exit, *coords[1])
 
     if step == 15:
         for i in range(N_FIRES):
@@ -216,12 +174,12 @@ def move_wrap(obj, move):
         canvas.move(obj, 0, step * N_Y)
 
 
-def do_nothing(x):
+def do_nothing(event):
     pass
 
 
 def check_move():
-    if canvas.coords(player)[:2] == canvas.coords(exit)[:2]:
+    if canvas.coords(player)[:2] == canvas.coords(obj_exit)[:2]:
         win()
 
     global fires
@@ -266,10 +224,10 @@ master.title('Сбеги от грусти')
 
 step = 15
 
-player_pic = tk.PhotoImage(file="player.gif")
+player_pic = tk.PhotoImage(file="player.png")
 exit_pic = tk.PhotoImage(file="exit.png")
-fire_pic = tk.PhotoImage(file="fire.gif")
-enemy_pic = tk.PhotoImage(file="enemy.gif")
+fire_pic = tk.PhotoImage(file="fire.png")
+enemy_pic = tk.PhotoImage(file="enemy.png")
 
 N_X = 50
 N_Y = 50
@@ -280,7 +238,10 @@ fires = []
 enemies = []
 coords = []
 
-diff = 0
+player: int
+obj_exit: int
+
+difficulty = 0
 level = 1
 
 canvas = tk.Canvas(master, bg='#969696',
@@ -293,8 +254,8 @@ canvas.place(relx=0.5, y=20, anchor='n')
 restart = tk.Button(master, text='Начать заново', command=prepare_and_start)
 restart.place(relx=1, y=772, anchor='ne')
 
-diff_button = tk.Button(master, text='Повысить сложность ботов', command=change_diff)
-diff_button.place(relx=0, y=772, anchor='nw')
+difficulty_button = tk.Button(master, text='Повысить сложность ботов', command=change_difficulty)
+difficulty_button.place(relx=0, y=772, anchor='nw')
 
 choose_lvl = tk.Button(master, text='Выбрать уровень', command=change_level)
 choose_lvl.place(relx=0.5, y=772, anchor='n')
